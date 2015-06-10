@@ -1,0 +1,21 @@
+<resources>
+
+    <style name="MyToolbar" parent="ThemeOverlay.AppCompat.Dark">
+        <item name="android:textColorPrimary">@android:color/white</item>
+    </style>
+
+    <style name="buttonOrange">
+        <item name="android:textColor">@color/grey_900</item>
+        <item name="android:background">@color/udacious_orange</item>
+        <item name="android:width">200dp</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="buttonRed">
+        <item name="android:textColor">@color/grey_50</item>
+        <item name="android:background">@color/red_800</item>
+        <item name="android:width">200dp</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+</resources>
