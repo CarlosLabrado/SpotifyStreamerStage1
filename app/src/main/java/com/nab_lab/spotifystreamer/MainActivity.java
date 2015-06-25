@@ -13,7 +13,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 
-public class MainActivity extends AppCompatActivity implements ArtistListFragment.OnFragmentInteractionListener {
+public class MainActivity extends AppCompatActivity implements ArtistListFragment.OnFragmentInteractionListener,
+        TopTracksFragment.OnFragmentInteractionListener {
 
     private final String TAG = MainActivity.class.getSimpleName();
 
@@ -32,19 +33,20 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
 
         if (savedInstanceState == null) {
             // on first time display view for first nav item
-            fillContainerWithFragment(0);
+            fillContainerWithFragment(0, null);
         }
 
     }
 
-    private void fillContainerWithFragment(int position) {
+    private void fillContainerWithFragment(int position, String artistId) {
         Fragment fragment = null;
         switch (position) {
             case 0:
                 fragment = new ArtistListFragment();
                 break;
             case 1:
-//                fragment = new ListFragment();
+                new TopTracksFragment();
+                fragment = TopTracksFragment.newInstance(artistId);
                 break;
             default:
                 break;
@@ -103,11 +105,17 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
     }
 
     @Override
-    public void onFragmentInteraction(Uri uri) {
+    public void onFragmentInteraction(String artistId) {
+        if (artistId != null) {
+            fillContainerWithFragment(1, artistId);
+            Log.d(TAG, artistId);
+        }
 
     }
 
 
+    @Override
+    public void onFragmentInteraction(Uri uri) {
 
-
+    }
 }
