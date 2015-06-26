@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import com.nab_lab.spotifystreamer.custom.CustomAdapter;
 import com.nab_lab.spotifystreamer.custom.RecyclerItemClickListener;
@@ -97,7 +98,7 @@ public class ArtistListFragment extends Fragment {
             }
         });
 
-        containerTest = (LinearLayout) view.findViewById(R.id.containerTest);
+        containerTest = (LinearLayout) view.findViewById(R.id.containerArtists);
 
         return view;
     }
@@ -130,12 +131,18 @@ public class ArtistListFragment extends Fragment {
                     @Override
                     public void onItemClick(View view, int position) {
                         Log.d(TAG, "clicked" + position);
-                        mListener.onFragmentInteraction(mArtistList.get(position).id);
+                        mListener.onFragmentInteraction(mArtistList.get(position).id, mArtistList.get(position).name);
                     }
                 })
         );
 
         containerTest.addView(recyclerView);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        ((MainActivity) getActivity()).setActionBarTitle(getString(R.string.app_toolbar_title), null, false);
     }
 
     @Override
@@ -167,7 +174,7 @@ public class ArtistListFragment extends Fragment {
      */
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
-        public void onFragmentInteraction(String artistId);
+        public void onFragmentInteraction(String artistId, String name);
     }
 
     /**
@@ -192,8 +199,10 @@ public class ArtistListFragment extends Fragment {
         protected void onPostExecute(ArtistsPager artistsPager) {
             super.onPostExecute(artistsPager);
             searchIsRunning = false;
-            if (artistsPager != null) {
+            if (artistsPager != null && !artistsPager.artists.items.isEmpty()) {
                 drawRecyclerView(artistsPager.artists.items);
+            } else {
+                Toast.makeText(getActivity(), "Sorry, we couldn't find anything related to that artist", Toast.LENGTH_SHORT).show();
             }
         }
     }

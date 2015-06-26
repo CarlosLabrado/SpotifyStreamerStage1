@@ -17,12 +17,12 @@
 package com.nab_lab.spotifystreamer.custom;
 
 import android.content.Context;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.nab_lab.spotifystreamer.R;
@@ -37,7 +37,7 @@ import kaaes.spotify.webapi.android.models.Track;
  * Provide views to RecyclerView with data from mDataSet.
  */
 public class CustomAdapterTracks extends RecyclerView.Adapter<CustomAdapterTracks.ViewHolder> {
-    private static final String TAG = "CustomAdapter";
+    private static final String TAG = CustomAdapterTracks.class.getSimpleName();
 
     private List<Track> mDataset;
     private Context mContext;
@@ -48,14 +48,16 @@ public class CustomAdapterTracks extends RecyclerView.Adapter<CustomAdapterTrack
     public static class ViewHolder extends RecyclerView.ViewHolder {
         // each data item is just a string in this case
         public ImageView mImageView;
-        public TextView mTextView;
-        public LinearLayout mContainer;
+        public TextView mTextViewSongName;
+        public TextView mTextViewAlbumName;
+        public CardView mContainer;
 
-        public ViewHolder(LinearLayout v) {
+        public ViewHolder(CardView v) {
             super(v);
             mContainer = v;
-            mImageView = (ImageView) v.findViewById(R.id.imageViewArtistImage);
-            mTextView = (TextView) v.findViewById(R.id.textViewArtistName);
+            mImageView = (ImageView) v.findViewById(R.id.imageViewAlbumImage);
+            mTextViewSongName = (TextView) v.findViewById(R.id.textViewSongName);
+            mTextViewAlbumName = (TextView) v.findViewById(R.id.textViewAlbumName);
         }
     }
 
@@ -71,9 +73,9 @@ public class CustomAdapterTracks extends RecyclerView.Adapter<CustomAdapterTrack
                                                              int viewType) {
 //        // create a new view
         View v = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.artist_item, parent, false);
+                .inflate(R.layout.top_tracks_item, parent, false);
 //        // set the view's size, margins, paddings and layout parameters
-        ViewHolder vh = new ViewHolder((LinearLayout) v);
+        ViewHolder vh = new ViewHolder((CardView) v);
         return vh;
     }
 
@@ -82,7 +84,8 @@ public class CustomAdapterTracks extends RecyclerView.Adapter<CustomAdapterTrack
     public void onBindViewHolder(ViewHolder holder, int position) {
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
-        holder.mTextView.setText(mDataset.get(position).name);
+        holder.mTextViewSongName.setText(mDataset.get(position).name);
+        holder.mTextViewAlbumName.setText(mDataset.get(position).album.name);
         List<Image> imageList = mDataset.get(position).album.images;
         if (imageList != null && !imageList.isEmpty()) {
             Picasso.with(mContext).

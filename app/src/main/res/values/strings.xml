@@ -2,6 +2,7 @@
     <string name="app_name">SpotifyStreamer</string>
 
     <string name="app_toolbar_title">Spotify Streamer</string>
+    <string name="app_toolbar_title_top_tracks">Top 10 Tracks</string>
 
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>

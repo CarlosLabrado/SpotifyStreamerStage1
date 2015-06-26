@@ -19,7 +19,7 @@
             android:singleLine="true" />
 
         <LinearLayout
-            android:id="@+id/containerTest"
+            android:id="@+id/containerArtists"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical" />

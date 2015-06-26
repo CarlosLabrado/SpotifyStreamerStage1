@@ -36,11 +36,11 @@ import kaaes.spotify.webapi.android.models.Tracks;
 public class TopTracksFragment extends Fragment {
     private final String TAG = TopTracksFragment.class.getSimpleName();
 
-    private static final String ARG_PARAM1 = "param1";
+    private static final String ARG_ARTIST_ID = "paramArtistID";
+    private static final String ARG_ARTIST_NAME = "paramArtistName";
 
     private String mArtistId;
-
-    RecyclerView mRecyclerViewTopTracks;
+    private String mArtistName;
 
     private OnFragmentInteractionListener mListener;
 
@@ -50,13 +50,15 @@ public class TopTracksFragment extends Fragment {
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      *
-     * @param param1 Parameter 1.
+     * @param param1 Artist id
+     * @param param2 Artist name
      * @return A new instance of fragment TopTracksFragment.
      */
-    public static TopTracksFragment newInstance(String param1) {
+    public static TopTracksFragment newInstance(String param1, String param2) {
         TopTracksFragment fragment = new TopTracksFragment();
         Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
+        args.putString(ARG_ARTIST_ID, param1);
+        args.putString(ARG_ARTIST_NAME, param2);
         fragment.setArguments(args);
         return fragment;
     }
@@ -65,11 +67,13 @@ public class TopTracksFragment extends Fragment {
         // Required empty public constructor
     }
 
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            mArtistId = getArguments().getString(ARG_PARAM1);
+            mArtistId = getArguments().getString(ARG_ARTIST_ID);
+            mArtistName = getArguments().getString(ARG_ARTIST_NAME);
         }
     }
 
@@ -78,7 +82,6 @@ public class TopTracksFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_top_tracks, container, false);
-//        mRecyclerViewTopTracks = (RecyclerView) view.findViewById(R.id.recycler_view_top_tracks);
 
         mContainerTracks = (LinearLayout) view.findViewById(R.id.containerTopTracks);
         new SearchTopTracksAsync().execute("");
@@ -86,11 +89,10 @@ public class TopTracksFragment extends Fragment {
         return view;
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
+    @Override
+    public void onResume() {
+        super.onResume();
+        ((MainActivity) getActivity()).setActionBarTitle(getString(R.string.app_toolbar_title_top_tracks), mArtistName, true);
     }
 
     @Override
@@ -123,15 +125,6 @@ public class TopTracksFragment extends Fragment {
         RecyclerView.Adapter adapter = new CustomAdapterTracks(items, getActivity());
         recyclerView.setAdapter(adapter);
 
-//        recyclerView.addOnItemTouchListener(new RecyclerItemClickListener(getActivity(), new RecyclerItemClickListener.OnItemClickListener() {
-//                    @Override
-//                    public void onItemClick(View view, int position) {
-//                        Log.d(TAG, "clicked" + position);
-//                        mListener.onFragmentInteraction(mArtistList.get(position).id);
-//                    }
-//                })
-//        );
-
         mContainerTracks.addView(recyclerView);
     }
 
@@ -152,7 +145,6 @@ public class TopTracksFragment extends Fragment {
      * >Communicating with Other Fragments</a> for more information.
      */
     public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
         public void onFragmentInteraction(Uri uri);
     }
 

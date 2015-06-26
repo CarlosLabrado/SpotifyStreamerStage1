@@ -33,12 +33,12 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
 
         if (savedInstanceState == null) {
             // on first time display view for first nav item
-            fillContainerWithFragment(0, null);
+            fillContainerWithFragment(0, null, null);
         }
 
     }
 
-    private void fillContainerWithFragment(int position, String artistId) {
+    private void fillContainerWithFragment(int position, String artistId, String artistName) {
         Fragment fragment = null;
         switch (position) {
             case 0:
@@ -46,7 +46,7 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
                 break;
             case 1:
                 new TopTracksFragment();
-                fragment = TopTracksFragment.newInstance(artistId);
+                fragment = TopTracksFragment.newInstance(artistId, artistName);
                 break;
             default:
                 break;
@@ -75,11 +75,17 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
      */
     private void setUpToolBar() {
         setSupportActionBar(toolbar);
-        getSupportActionBar().setTitle(getString(R.string.app_toolbar_title));
+        setActionBarTitle(getString(R.string.app_toolbar_title), null, false);
         getSupportActionBar().setDisplayShowTitleEnabled(true);
         // enabling action bar app icon and behaving it as toggle button
         getSupportActionBar().setDefaultDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
+    }
+
+    @Override
+    public boolean onSupportNavigateUp() {
+        getSupportFragmentManager().popBackStack();
+        return true;
     }
 
     @Override
@@ -105,17 +111,51 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
     }
 
     @Override
-    public void onFragmentInteraction(String artistId) {
+    public void onFragmentInteraction(String artistId, String name) {
         if (artistId != null) {
-            fillContainerWithFragment(1, artistId);
+            fillContainerWithFragment(1, artistId, name);
             Log.d(TAG, artistId);
         }
 
+    }
+
+    /**
+     * Gets called from the fragments onResume and its because only the first doesn't have the up
+     * button on the actionBar
+     *
+     * @param title          The title to show on the ActionBar
+     * @param subtitle       The subtitle to show on the ActionBar
+     * @param showNavigateUp if true, shows the up button
+     */
+    public void setActionBarTitle(String title, String subtitle, boolean showNavigateUp) {
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle(title);
+            if (subtitle != null) {
+                getSupportActionBar().setSubtitle(subtitle);
+            } else {
+                getSupportActionBar().setSubtitle(null);
+            }
+            if (showNavigateUp) {
+                getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            } else {
+                getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+            }
+        }
     }
 
 
     @Override
     public void onFragmentInteraction(Uri uri) {
 
+    }
+
+    @Override
+    public void onBackPressed() {
+        int fragments = getSupportFragmentManager().getBackStackEntryCount();
+        if (fragments > 1) {
+            super.onBackPressed();
+        } else {
+            finish();
+        }
     }
 }

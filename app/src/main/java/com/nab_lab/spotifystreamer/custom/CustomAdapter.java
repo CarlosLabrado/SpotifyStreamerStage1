@@ -17,12 +17,12 @@
 package com.nab_lab.spotifystreamer.custom;
 
 import android.content.Context;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.nab_lab.spotifystreamer.R;
@@ -37,7 +37,7 @@ import kaaes.spotify.webapi.android.models.Image;
  * Provide views to RecyclerView with data from mDataSet.
  */
 public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder> {
-    private static final String TAG = "CustomAdapter";
+    private static final String TAG = CustomAdapter.class.getSimpleName();
 
     private List<Artist> mDataset;
     private Context mContext;
@@ -49,9 +49,9 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder
         // each data item is just a string in this case
         public ImageView mImageView;
         public TextView mTextView;
-        public LinearLayout mContainer;
+        public CardView mContainer;
 
-        public ViewHolder(LinearLayout v) {
+        public ViewHolder(CardView v) {
             super(v);
             mContainer = v;
             mImageView = (ImageView) v.findViewById(R.id.imageViewArtistImage);
@@ -73,7 +73,7 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder
         View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.artist_item, parent, false);
 //        // set the view's size, margins, paddings and layout parameters
-        ViewHolder vh = new ViewHolder((LinearLayout) v);
+        ViewHolder vh = new ViewHolder((CardView) v);
         return vh;
     }
 
