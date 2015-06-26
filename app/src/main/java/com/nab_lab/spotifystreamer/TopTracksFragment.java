@@ -13,7 +13,9 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 import com.nab_lab.spotifystreamer.custom.CustomAdapterTracks;
+import com.nab_lab.spotifystreamer.custom.TopTrack;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -38,6 +40,7 @@ public class TopTracksFragment extends Fragment {
 
     private static final String ARG_ARTIST_ID = "paramArtistID";
     private static final String ARG_ARTIST_NAME = "paramArtistName";
+    private static final String PARCELABLE_TOP_TRACKS_LIST = "parcelableTopTracksList";
 
     private String mArtistId;
     private String mArtistName;
@@ -45,6 +48,10 @@ public class TopTracksFragment extends Fragment {
     private OnFragmentInteractionListener mListener;
 
     private LinearLayout mContainerTracks;
+
+    private Tracks mTracks;
+
+    private ArrayList<TopTrack> mTopTracks;
 
     /**
      * Use this factory method to create a new instance of
@@ -84,9 +91,20 @@ public class TopTracksFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_top_tracks, container, false);
 
         mContainerTracks = (LinearLayout) view.findViewById(R.id.containerTopTracks);
-        new SearchTopTracksAsync().execute("");
+        if (savedInstanceState == null) {
+            new SearchTopTracksAsync().execute("");
+        } else {
+            mTopTracks = savedInstanceState.getParcelableArrayList(PARCELABLE_TOP_TRACKS_LIST);
+            drawRecyclerView(null, true);
+        }
 
         return view;
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putParcelableArrayList(PARCELABLE_TOP_TRACKS_LIST, mTopTracks);
     }
 
     @Override
@@ -110,10 +128,15 @@ public class TopTracksFragment extends Fragment {
     /**
      * Programmatically adds the recycler view
      *
-     * @param items the Artist list
+     * @param items        the Artist list
+     * @param isSavedState indicates if there was a saved state ej. User rotated screen
      */
-    private void drawRecyclerView(List<Track> items) {
+    private void drawRecyclerView(List<Track> items, boolean isSavedState) {
         mContainerTracks.removeAllViews();
+
+        if (!isSavedState) {
+            mTopTracks = transformIntoParcelable(items);
+        }
 
         RecyclerView recyclerView = new RecyclerView(getActivity());
         recyclerView.setHasFixedSize(true);
@@ -122,10 +145,19 @@ public class TopTracksFragment extends Fragment {
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getActivity());
         recyclerView.setLayoutManager(layoutManager);
 
-        RecyclerView.Adapter adapter = new CustomAdapterTracks(items, getActivity());
+        RecyclerView.Adapter adapter = new CustomAdapterTracks(mTopTracks, getActivity());
         recyclerView.setAdapter(adapter);
 
         mContainerTracks.addView(recyclerView);
+    }
+
+    public ArrayList<TopTrack> transformIntoParcelable(List<Track> items) {
+        ArrayList<TopTrack> topTracks = new ArrayList<>();
+        for (Track track : items) {
+            TopTrack parcelableTrack = new TopTrack(track);
+            topTracks.add(parcelableTrack);
+        }
+        return topTracks;
     }
 
     @Override
@@ -158,15 +190,15 @@ public class TopTracksFragment extends Fragment {
             Map<String, Object> map = new HashMap<>();
             map.put("country", Locale.getDefault().getCountry());
 
-            Tracks tracks = spotify.getArtistTopTrack(mArtistId, map);
+            mTracks = spotify.getArtistTopTrack(mArtistId, map);
 
-            return tracks;
+            return mTracks;
         }
 
         @Override
         protected void onPostExecute(Tracks tracks) {
             super.onPostExecute(tracks);
-            drawRecyclerView(tracks.tracks);
+            drawRecyclerView(tracks.tracks, false);
         }
     }
 

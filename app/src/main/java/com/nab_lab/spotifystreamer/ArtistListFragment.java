@@ -43,7 +43,7 @@ public class ArtistListFragment extends Fragment {
 
 
     EditText editTextArtistSearch;
-    LinearLayout containerTest;
+    LinearLayout containerArtists;
 
     private boolean searchIsRunning = false;
     private final long SEARCH_TRIGGER_DELAY_IN_MS = 1000;
@@ -90,7 +90,7 @@ public class ArtistListFragment extends Fragment {
                         public void run() {
                             if (!searchIsRunning) {
                                 searchIsRunning = true;
-                                buttonSearchClicked();
+                                searchTriggered();
                             }
                         }
                     }, SEARCH_TRIGGER_DELAY_IN_MS);
@@ -98,12 +98,12 @@ public class ArtistListFragment extends Fragment {
             }
         });
 
-        containerTest = (LinearLayout) view.findViewById(R.id.containerArtists);
+        containerArtists = (LinearLayout) view.findViewById(R.id.containerArtists);
 
         return view;
     }
 
-    public void buttonSearchClicked() {
+    public void searchTriggered() {
         new SearchAsync().execute(editTextArtistSearch.getText().toString());
     }
 
@@ -113,7 +113,7 @@ public class ArtistListFragment extends Fragment {
      * @param items the Artist list
      */
     private void drawRecyclerView(List<Artist> items) {
-        containerTest.removeAllViews();
+        containerArtists.removeAllViews();
 
         mArtistList = items;
 
@@ -136,7 +136,7 @@ public class ArtistListFragment extends Fragment {
                 })
         );
 
-        containerTest.addView(recyclerView);
+        containerArtists.addView(recyclerView);
     }
 
     @Override

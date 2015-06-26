@@ -54,6 +54,7 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder
         public ViewHolder(CardView v) {
             super(v);
             mContainer = v;
+            mContainer.setCardBackgroundColor(v.getResources().getColor(R.color.color_cards));
             mImageView = (ImageView) v.findViewById(R.id.imageViewArtistImage);
             mTextView = (TextView) v.findViewById(R.id.textViewArtistName);
         }

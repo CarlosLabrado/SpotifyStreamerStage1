@@ -3,8 +3,10 @@
 
     <color name="udacious_orange">#F08C35</color>
 
-    <color name="color_primary">@color/grey_800</color>
-    <color name="color_primaryDarker">@color/grey_900</color>
+    <color name="color_primary">#2EBD59</color>
+    <color name="color_primaryDarker">#1F793D</color>
+
+    <color name="color_cards">@color/orange_600</color>
 
     <!--Material design colors-->
     <color name="red_50">#ffebee</color>

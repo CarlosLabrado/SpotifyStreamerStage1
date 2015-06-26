@@ -29,15 +29,17 @@
 
             <TextView
                 android:id="@+id/textViewSongName"
+                android:textColor="@color/grey_50"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="sgsg" />
+                android:text="" />
 
             <TextView
                 android:id="@+id/textViewAlbumName"
+                android:textColor="@color/grey_50"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="gsgs" />
+                android:text="" />
         </LinearLayout>
 
     </LinearLayout>

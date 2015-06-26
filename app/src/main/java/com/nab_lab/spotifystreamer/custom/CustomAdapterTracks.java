@@ -28,10 +28,7 @@ import android.widget.TextView;
 import com.nab_lab.spotifystreamer.R;
 import com.squareup.picasso.Picasso;
 
-import java.util.List;
-
-import kaaes.spotify.webapi.android.models.Image;
-import kaaes.spotify.webapi.android.models.Track;
+import java.util.ArrayList;
 
 /**
  * Provide views to RecyclerView with data from mDataSet.
@@ -39,7 +36,7 @@ import kaaes.spotify.webapi.android.models.Track;
 public class CustomAdapterTracks extends RecyclerView.Adapter<CustomAdapterTracks.ViewHolder> {
     private static final String TAG = CustomAdapterTracks.class.getSimpleName();
 
-    private List<Track> mDataset;
+    private ArrayList<TopTrack> mDataset;
     private Context mContext;
 
     // Provide a reference to the views for each data item
@@ -55,6 +52,7 @@ public class CustomAdapterTracks extends RecyclerView.Adapter<CustomAdapterTrack
         public ViewHolder(CardView v) {
             super(v);
             mContainer = v;
+            mContainer.setCardBackgroundColor(v.getResources().getColor(R.color.color_cards));
             mImageView = (ImageView) v.findViewById(R.id.imageViewAlbumImage);
             mTextViewSongName = (TextView) v.findViewById(R.id.textViewSongName);
             mTextViewAlbumName = (TextView) v.findViewById(R.id.textViewAlbumName);
@@ -62,7 +60,7 @@ public class CustomAdapterTracks extends RecyclerView.Adapter<CustomAdapterTrack
     }
 
     // Provide a suitable constructor (depends on the kind of dataset)
-    public CustomAdapterTracks(List<Track> myDataset, Context context) {
+    public CustomAdapterTracks(ArrayList<TopTrack> myDataset, Context context) {
         mDataset = myDataset;
         mContext = context;
     }
@@ -84,14 +82,11 @@ public class CustomAdapterTracks extends RecyclerView.Adapter<CustomAdapterTrack
     public void onBindViewHolder(ViewHolder holder, int position) {
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
-        holder.mTextViewSongName.setText(mDataset.get(position).name);
-        holder.mTextViewAlbumName.setText(mDataset.get(position).album.name);
-        List<Image> imageList = mDataset.get(position).album.images;
-        if (imageList != null && !imageList.isEmpty()) {
-            Picasso.with(mContext).
-                    load(imageList.get(0).url).
-                    into(holder.mImageView);
-        }
+        holder.mTextViewSongName.setText(mDataset.get(position).trackName);
+        holder.mTextViewAlbumName.setText(mDataset.get(position).albumName);
+        Picasso.with(mContext).
+                load(mDataset.get(position).imageURL).
+                into(holder.mImageView);
 
     }
 
