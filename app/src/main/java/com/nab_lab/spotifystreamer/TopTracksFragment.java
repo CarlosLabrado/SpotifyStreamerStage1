@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -190,7 +191,12 @@ public class TopTracksFragment extends Fragment {
             Map<String, Object> map = new HashMap<>();
             map.put("country", Locale.getDefault().getCountry());
 
-            mTracks = spotify.getArtistTopTrack(mArtistId, map);
+            try {
+                mTracks = spotify.getArtistTopTrack(mArtistId, map);
+            } catch (Exception e) {
+                Log.e(TAG, "there is an spotify API backend error");
+                e.printStackTrace();
+            }
 
             return mTracks;
         }

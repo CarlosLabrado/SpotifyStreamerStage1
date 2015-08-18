@@ -186,13 +186,18 @@ public class ArtistListFragment extends Fragment {
         protected ArtistsPager doInBackground(String... strings) {
             SpotifyApi api = new SpotifyApi();
 
-            SpotifyService spotify = api.getService();
+            try {
+                SpotifyService spotify = api.getService();
 
-            if (!strings[0].isEmpty()) {
-                return spotify.searchArtists(strings[0]);
-            } else {
-                return null;
+                if (!strings[0].isEmpty()) {
+                    return spotify.searchArtists(strings[0]);
+                } else {
+                    return null;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
+            return null;
         }
 
         @Override
