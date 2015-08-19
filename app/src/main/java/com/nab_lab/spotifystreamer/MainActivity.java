@@ -1,6 +1,6 @@
 package com.nab_lab.spotifystreamer;
 
-import android.net.Uri;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -9,6 +9,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.transition.TransitionInflater;
 import android.util.Log;
+
+import com.nab_lab.spotifystreamer.custom.TopTrack;
+
+import java.util.ArrayList;
 
 
 public class MainActivity extends AppCompatActivity implements ArtistListFragment.OnFragmentInteractionListener,
@@ -115,7 +119,15 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
             fillContainerWithFragment(1, artistId, name);
             Log.d(TAG, artistId);
         }
+    }
 
+    @Override
+    public void onFragmentInteraction(ArrayList<TopTrack> topTracks, String artistName, int position) {
+        Intent intent = new Intent(this, PlaybackActivity.class);
+        intent.putExtra("artistName", artistName);
+        intent.putExtra("position", position);
+        intent.putParcelableArrayListExtra("topTracks", topTracks);
+        startActivity(intent);
     }
 
     /**
@@ -144,11 +156,6 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
 
 
     @Override
-    public void onFragmentInteraction(Uri uri) {
-
-    }
-
-    @Override
     public void onBackPressed() {
         int fragments = getSupportFragmentManager().getBackStackEntryCount();
         if (fragments > 1) {
@@ -157,4 +164,5 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
             finish();
         }
     }
+
 }

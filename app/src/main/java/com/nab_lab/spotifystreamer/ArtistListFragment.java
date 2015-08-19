@@ -173,7 +173,6 @@ public class ArtistListFragment extends Fragment {
      * >Communicating with Other Fragments</a> for more information.
      */
     public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
         public void onFragmentInteraction(String artistId, String name);
     }
 

@@ -18,11 +18,13 @@ public class TopTrack implements Parcelable {
 
     public String imageURL;
 
+    public String previewURL;
 
     protected TopTrack(Parcel in) {
         trackName = in.readString();
         albumName = in.readString();
         imageURL = in.readString();
+        previewURL = in.readString();
     }
 
     public TopTrack(Track track) {
@@ -30,6 +32,7 @@ public class TopTrack implements Parcelable {
         albumName = track.album.name;
         // we always get the first image of that album
         imageURL = track.album.images.get(0).url;
+        previewURL = track.preview_url;
     }
 
     @Override
@@ -42,6 +45,7 @@ public class TopTrack implements Parcelable {
         dest.writeString(trackName);
         dest.writeString(albumName);
         dest.writeString(imageURL);
+        dest.writeString(previewURL);
     }
 
     @SuppressWarnings("unused")

@@ -1,7 +1,6 @@
 package com.nab_lab.spotifystreamer;
 
 import android.app.Activity;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -14,6 +13,7 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 import com.nab_lab.spotifystreamer.custom.CustomAdapterTracks;
+import com.nab_lab.spotifystreamer.custom.RecyclerItemClickListener;
 import com.nab_lab.spotifystreamer.custom.TopTrack;
 
 import java.util.ArrayList;
@@ -149,10 +149,19 @@ public class TopTracksFragment extends Fragment {
         RecyclerView.Adapter adapter = new CustomAdapterTracks(mTopTracks, getActivity());
         recyclerView.setAdapter(adapter);
 
+        recyclerView.addOnItemTouchListener(new RecyclerItemClickListener(getActivity(), new RecyclerItemClickListener.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(View view, int position) {
+                        Log.d(TAG, "clicked" + position);
+                        mListener.onFragmentInteraction(mTopTracks,
+                                mArtistName, position);
+                    }
+                })
+        );
         mContainerTracks.addView(recyclerView);
     }
 
-    public ArrayList<TopTrack> transformIntoParcelable(List<Track> items) {
+    private ArrayList<TopTrack> transformIntoParcelable(List<Track> items) {
         ArrayList<TopTrack> topTracks = new ArrayList<>();
         for (Track track : items) {
             TopTrack parcelableTrack = new TopTrack(track);
@@ -178,7 +187,8 @@ public class TopTracksFragment extends Fragment {
      * >Communicating with Other Fragments</a> for more information.
      */
     public interface OnFragmentInteractionListener {
-        public void onFragmentInteraction(Uri uri);
+
+        void onFragmentInteraction(ArrayList<TopTrack> mTopTracks, String mArtistName, int position);
     }
 
     private class SearchTopTracksAsync extends AsyncTask<String, Void, Tracks> {
