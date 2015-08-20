@@ -11,7 +11,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -44,9 +44,9 @@ public class PlaybackActivity extends AppCompatActivity {
     TextView textViewPlaybackCurrent;
     TextView textViewPlaybackTotalLength;
 
-    Button buttonPlaybackPrevious;
-    Button buttonPlaybackPlay;
-    Button buttonPlaybackNext;
+    ImageButton buttonPlaybackPrevious;
+    ImageButton buttonPlaybackPlay;
+    ImageButton buttonPlaybackNext;
 
     private MusicService mMusicService;
     private Intent mPlayIntent;
@@ -83,9 +83,9 @@ public class PlaybackActivity extends AppCompatActivity {
         textViewPlaybackCurrent = (TextView) findViewById(R.id.textViewPlaybackCurrent);
         textViewPlaybackTotalLength = (TextView) findViewById(R.id.textViewPlayBackTotalLength);
 
-        buttonPlaybackPrevious = (Button) findViewById(R.id.buttonPlaybackPrevious);
-        buttonPlaybackPlay = (Button) findViewById(R.id.buttonPlaybackPlay);
-        buttonPlaybackNext = (Button) findViewById(R.id.buttonPlaybackNext);
+        buttonPlaybackPrevious = (ImageButton) findViewById(R.id.buttonPlaybackPrevious);
+        buttonPlaybackPlay = (ImageButton) findViewById(R.id.buttonPlaybackPlay);
+        buttonPlaybackNext = (ImageButton) findViewById(R.id.buttonPlaybackNext);
 
         textViewArtistName.setText(mArtistName);
         initArtLayout(mPosition);

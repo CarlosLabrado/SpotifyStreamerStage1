@@ -97,23 +97,25 @@
             android:gravity="center"
             android:orientation="horizontal">
 
-            <Button
+            <ImageButton
                 android:id="@+id/buttonPlaybackPrevious"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Back" />
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:src="@drawable/button_previous" />
 
-            <Button
+            <ImageButton
                 android:id="@+id/buttonPlaybackPlay"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Play" />
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:src="@drawable/button_play"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp" />
 
-            <Button
+            <ImageButton
                 android:id="@+id/buttonPlaybackNext"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Next" />
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:src="@drawable/button_next" />
         </LinearLayout>
     </LinearLayout>
 </RelativeLayout>
