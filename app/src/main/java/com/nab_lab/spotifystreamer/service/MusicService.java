@@ -6,6 +6,7 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.IBinder;
+import android.util.Log;
 
 import com.nab_lab.spotifystreamer.custom.TopTrack;
 
@@ -35,6 +36,10 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         return false;
     }
 
+    public boolean isMusicPlaying() {
+        return mMediaPlayer.isPlaying();
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -57,7 +62,6 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
     synchronized public void playSong() {
         mMediaPlayer.stop();
-
         synchronized (this) {
             mMediaPlayer.reset();
             TopTrack playTrack = mTopTracks.get(mPosition);
@@ -83,7 +87,7 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-
+        Log.d("Media player", "Completed song");
     }
 
     @Override
@@ -93,7 +97,6 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
     @Override
     public void onPrepared(MediaPlayer mp) {
-
         mp.start();
     }
 

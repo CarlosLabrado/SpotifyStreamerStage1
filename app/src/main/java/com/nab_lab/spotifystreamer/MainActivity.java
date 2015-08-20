@@ -1,6 +1,5 @@
 package com.nab_lab.spotifystreamer;
 
-import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -23,6 +22,12 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
     Toolbar toolbar;
 
 
+    private String mArtistName;
+    private ArrayList<TopTrack> mTopTracks;
+    private int mPosition;
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -35,14 +40,14 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
 
         if (savedInstanceState == null) {
             // on first time display view for first nav item
-            fillContainerWithFragment(0, null, null);
+            fillContainerWithFragment(0, null, null, null, 0);
         }
 
     }
 
-    private void fillContainerWithFragment(int position, String artistId, String artistName) {
+    private void fillContainerWithFragment(int fragmentNumber, String artistId, String artistName, ArrayList<TopTrack> topTracks, int trackPosition) {
         Fragment fragment = null;
-        switch (position) {
+        switch (fragmentNumber) {
             case 0:
                 fragment = new ArtistListFragment();
                 break;
@@ -50,6 +55,9 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
                 new TopTracksFragment();
                 fragment = TopTracksFragment.newInstance(artistId, artistName);
                 break;
+            case 2:
+                new PlaybackFragment();
+                fragment = PlaybackFragment.newInstance(artistName, topTracks, trackPosition);
             default:
                 break;
         }
@@ -116,18 +124,18 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
     @Override
     public void onFragmentInteraction(String artistId, String name) {
         if (artistId != null) {
-            fillContainerWithFragment(1, artistId, name);
+            fillContainerWithFragment(1, artistId, name, null, 0);
             Log.d(TAG, artistId);
         }
     }
 
     @Override
     public void onFragmentInteraction(ArrayList<TopTrack> topTracks, String artistName, int position) {
-        Intent intent = new Intent(this, PlaybackActivity.class);
-        intent.putExtra("artistName", artistName);
-        intent.putExtra("position", position);
-        intent.putParcelableArrayListExtra("topTracks", topTracks);
-        startActivity(intent);
+        mArtistName = artistName;
+        mTopTracks = topTracks;
+        mPosition = position;
+
+        fillContainerWithFragment(2, null, artistName, topTracks, position);
     }
 
     /**

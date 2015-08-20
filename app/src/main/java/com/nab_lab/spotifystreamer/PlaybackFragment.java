@@ -7,10 +7,11 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
+import android.support.v4.app.DialogFragment;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
@@ -28,12 +29,16 @@ import java.util.concurrent.TimeUnit;
 
 /**
  */
-public class PlaybackActivity extends AppCompatActivity {
+public class PlaybackFragment extends DialogFragment {
 
-    Toolbar toolbar;
-    String mArtistName;
-    ArrayList<TopTrack> mTopTracks;
-    int mPosition;
+    private static final String ARG_ARTIST_NAME = "PARAM_ARTIST_NAME";
+    private static final String ARG_TOP_TRACKS = "PARAM_TOP_TRACKS";
+    private static final String ARG_TRACK_POSITION = "PARAM_TRACK_POSITION";
+
+
+    private String mArtistName;
+    private ArrayList<TopTrack> mTopTracks;
+    private int mPosition;
 
     TextView textViewArtistName;
     TextView textViewAlbumTitle;
@@ -58,34 +63,55 @@ public class PlaybackActivity extends AppCompatActivity {
 
     private boolean mSeekBarTaskIsRunning = false;
 
+    public PlaybackFragment() {
+    }
+
+
+    /**
+     * Factory method to create a new instance of this fragment
+     *
+     * @param artistName    Artist Name
+     * @param topTracks     top tracks to play
+     * @param trackPosition current track to play
+     * @return A new instance of PlaybackFragment
+     */
+    public static PlaybackFragment newInstance(String artistName, ArrayList<TopTrack> topTracks, int trackPosition) {
+        PlaybackFragment fragment = new PlaybackFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_ARTIST_NAME, artistName);
+        args.putParcelableArrayList(ARG_TOP_TRACKS, topTracks);
+        args.putInt(ARG_TRACK_POSITION, trackPosition);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_playback);
+        if (getArguments() != null) {
+            mArtistName = getArguments().getString(ARG_ARTIST_NAME);
+            mTopTracks = getArguments().getParcelableArrayList(ARG_TOP_TRACKS);
+            mPosition = getArguments().getInt(ARG_TRACK_POSITION);
+        }
+    }
 
-        Intent intent = getIntent();
-        mArtistName = intent.getStringExtra("artistName");
-        mTopTracks = intent.getParcelableArrayListExtra("topTracks");
-        mPosition = intent.getIntExtra("position", 0);
 
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_playback, container, false);
 
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        textViewArtistName = (TextView) view.findViewById(R.id.textViewArtistName);
+        textViewAlbumTitle = (TextView) view.findViewById(R.id.textViewAlbumTitle);
+        textViewSongName = (TextView) view.findViewById(R.id.textViewSongName);
+        imageViewAlbumImage = (ImageView) view.findViewById(R.id.imageViewAlbumImage);
 
-        /**toolBar **/
-        setUpToolBar();
+        seekBarPlayback = (SeekBar) view.findViewById(R.id.seekBarPlayBack);
+        textViewPlaybackCurrent = (TextView) view.findViewById(R.id.textViewPlaybackCurrent);
+        textViewPlaybackTotalLength = (TextView) view.findViewById(R.id.textViewPlayBackTotalLength);
 
-        textViewArtistName = (TextView) findViewById(R.id.textViewArtistName);
-        textViewAlbumTitle = (TextView) findViewById(R.id.textViewAlbumTitle);
-        textViewSongName = (TextView) findViewById(R.id.textViewSongName);
-        imageViewAlbumImage = (ImageView) findViewById(R.id.imageViewAlbumImage);
-
-        seekBarPlayback = (SeekBar) findViewById(R.id.seekBarPlayBack);
-        textViewPlaybackCurrent = (TextView) findViewById(R.id.textViewPlaybackCurrent);
-        textViewPlaybackTotalLength = (TextView) findViewById(R.id.textViewPlayBackTotalLength);
-
-        buttonPlaybackPrevious = (ImageButton) findViewById(R.id.buttonPlaybackPrevious);
-        buttonPlaybackPlay = (ImageButton) findViewById(R.id.buttonPlaybackPlay);
-        buttonPlaybackNext = (ImageButton) findViewById(R.id.buttonPlaybackNext);
+        buttonPlaybackPrevious = (ImageButton) view.findViewById(R.id.buttonPlaybackPrevious);
+        buttonPlaybackPlay = (ImageButton) view.findViewById(R.id.buttonPlaybackPlay);
+        buttonPlaybackNext = (ImageButton) view.findViewById(R.id.buttonPlaybackNext);
 
         textViewArtistName.setText(mArtistName);
         initArtLayout(mPosition);
@@ -139,7 +165,7 @@ public class PlaybackActivity extends AppCompatActivity {
 
         scheduleTaskExecutor = Executors.newScheduledThreadPool(5);
 
-
+        return view;
     }
 
     /**
@@ -152,10 +178,10 @@ public class PlaybackActivity extends AppCompatActivity {
             // This schedule a runnable task every second
             scheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
                 public void run() {
-                    if (mMusicService != null) {
+                    if (mMusicService != null && mMusicService.isMusicPlaying()) {
                         int progress = (mMusicService.getProgress() / 1000);
                         Log.d("progress", String.valueOf(progress));
-                        seekBarPlayback.setProgress(progress);
+                        seekBarPlayback.setProgress(progress + 1);
                     }
 
                     if (mMusicBound) mHandler.postDelayed(this, 1000);
@@ -208,7 +234,7 @@ public class PlaybackActivity extends AppCompatActivity {
     private void initArtLayout(int newPosition) {
         textViewAlbumTitle.setText(mTopTracks.get(newPosition).albumName);
         textViewSongName.setText(mTopTracks.get(newPosition).trackName);
-        Picasso.with(this)
+        Picasso.with(getActivity())
                 .load(mTopTracks.get(newPosition).imageURL)
                 .into(imageViewAlbumImage);
     }
@@ -230,65 +256,37 @@ public class PlaybackActivity extends AppCompatActivity {
     };
 
     @Override
-    protected void onStart() {
+    public void onStart() {
         super.onStart();
         if (mPlayIntent == null) {
-            mPlayIntent = new Intent(this, MusicService.class);
-            bindService(mPlayIntent, musicConnection, Context.BIND_AUTO_CREATE);
-            startService(mPlayIntent);
+            mPlayIntent = new Intent(getActivity(), MusicService.class);
+            getActivity().bindService(mPlayIntent, musicConnection, Context.BIND_AUTO_CREATE);
+            getActivity().startService(mPlayIntent);
         }
     }
 
     @Override
-    protected void onStop() {
+    public void onResume() {
+        super.onResume();
+        ((MainActivity) getActivity()).setActionBarTitle(getString(R.string.app_toolbar_title_now_playing), mArtistName, true);
+
+    }
+
+    @Override
+    public void onStop() {
         super.onStop();
         if (mMusicBound) {
-            unbindService(musicConnection);
+            getActivity().unbindService(musicConnection);
             mMusicBound = false;
         }
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         mSeekBarTaskIsRunning = false;
-        stopService(mPlayIntent);
+        getActivity().stopService(mPlayIntent);
         mMusicService = null;
         super.onDestroy();
     }
 
-    /**
-     * sets up the top bar
-     */
-    private void setUpToolBar() {
-        setSupportActionBar(toolbar);
-        setActionBarTitle(getString(R.string.app_toolbar_title), null, false);
-        getSupportActionBar().setDisplayShowTitleEnabled(true);
-        // enabling action bar app icon and behaving it as toggle button
-        getSupportActionBar().setDefaultDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setHomeButtonEnabled(true);
-    }
-
-    /**
-     * Gets called from the fragments onResume and its because only the first doesn't have the up
-     * button on the actionBar
-     *
-     * @param title          The title to show on the ActionBar
-     * @param subtitle       The subtitle to show on the ActionBar
-     * @param showNavigateUp if true, shows the up button
-     */
-    public void setActionBarTitle(String title, String subtitle, boolean showNavigateUp) {
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle(title);
-            if (subtitle != null) {
-                getSupportActionBar().setSubtitle(subtitle);
-            } else {
-                getSupportActionBar().setSubtitle(null);
-            }
-            if (showNavigateUp) {
-                getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            } else {
-                getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-            }
-        }
-    }
 }

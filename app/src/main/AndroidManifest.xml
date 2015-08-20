@@ -21,7 +21,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".PlaybackActivity"
+            android:name=".PlaybackFragment"
             android:label="@string/app_name"></activity>
 
         <service
