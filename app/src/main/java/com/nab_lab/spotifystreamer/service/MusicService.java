@@ -8,7 +8,9 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.nab_lab.spotifystreamer.PlaybackFragment;
 import com.nab_lab.spotifystreamer.custom.TopTrack;
+import com.nab_lab.spotifystreamer.events.PlayButtonEvent;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,6 +21,8 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     ArrayList<TopTrack> mTopTracks;
     int mPosition;
     private final IBinder mMusicBind = new MusicBinder();
+
+    int mTrackPosition = 0;
 
     public MusicService() {
     }
@@ -77,6 +81,12 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
     }
 
+    public int pauseSong() {
+        mTrackPosition = mMediaPlayer.getCurrentPosition();
+        mMediaPlayer.pause();
+        return mTrackPosition;
+    }
+
     public void setTopTracks(ArrayList<TopTrack> topTracks) {
         mTopTracks = topTracks;
     }
@@ -85,9 +95,15 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
         mPosition = position;
     }
 
+    public void setSeekTo(int position) {
+        mMediaPlayer.start();
+        mMediaPlayer.seekTo(position);
+    }
+
     @Override
     public void onCompletion(MediaPlayer mp) {
         Log.d("Media player", "Completed song");
+        PlaybackFragment.bus.post(new PlayButtonEvent(0));
     }
 
     @Override

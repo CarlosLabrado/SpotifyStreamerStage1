@@ -1,7 +1,13 @@
 package com.nab_lab.spotifystreamer;
 
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
@@ -10,12 +16,19 @@ import android.transition.TransitionInflater;
 import android.util.Log;
 
 import com.nab_lab.spotifystreamer.custom.TopTrack;
+import com.nab_lab.spotifystreamer.events.PlayButtonEvent;
+import com.nab_lab.spotifystreamer.events.SeekBarProgressEvent;
+import com.nab_lab.spotifystreamer.service.MusicService;
+import com.squareup.otto.Bus;
 
 import java.util.ArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 public class MainActivity extends AppCompatActivity implements ArtistListFragment.OnFragmentInteractionListener,
-        TopTracksFragment.OnFragmentInteractionListener {
+        TopTracksFragment.OnFragmentInteractionListener, PlaybackFragment.OnFragmentInteractionListener {
 
     private final String TAG = MainActivity.class.getSimpleName();
 
@@ -26,12 +39,27 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
     private ArrayList<TopTrack> mTopTracks;
     private int mPosition;
 
+    public static Bus bus;
 
+    private MusicService mMusicService;
+    private Intent mPlayIntent;
+    private boolean mMusicBound = false;
+
+    final Handler mHandler = new Handler();
+
+    ScheduledExecutorService scheduleTaskExecutor;
+
+    private boolean mSeekBarTaskIsRunning = false;
+
+    private int mPauseSeekPosition = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        bus = new Bus();
+        bus.register(this);
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
 
@@ -43,7 +71,11 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
             fillContainerWithFragment(0, null, null, null, 0);
         }
 
+        scheduleTaskExecutor = Executors.newScheduledThreadPool(5);
+
     }
+
+    private ServiceConnection musicConnection;
 
     private void fillContainerWithFragment(int fragmentNumber, String artistId, String artistName, ArrayList<TopTrack> topTracks, int trackPosition) {
         Fragment fragment = null;
@@ -121,6 +153,7 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
 //        return super.onOptionsItemSelected(item);
 //    }
 
+    // Artist List
     @Override
     public void onFragmentInteraction(String artistId, String name) {
         if (artistId != null) {
@@ -129,13 +162,176 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
         }
     }
 
+    // Top tracks
     @Override
     public void onFragmentInteraction(ArrayList<TopTrack> topTracks, String artistName, int position) {
         mArtistName = artistName;
         mTopTracks = topTracks;
         mPosition = position;
 
+        musicConnection = new ServiceConnection() {
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                MusicService.MusicBinder binder = (MusicService.MusicBinder) service;
+                mMusicService = binder.getService();
+                mMusicService.setTopTracks(mTopTracks);
+                mMusicBound = true;
+            }
+
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+                mMusicBound = false;
+            }
+        };
+        bindService(mPlayIntent, musicConnection, Context.BIND_AUTO_CREATE);
+        startService(mPlayIntent);
+
         fillContainerWithFragment(2, null, artistName, topTracks, position);
+    }
+
+    // Playback
+    @Override
+    public void onFragmentInteraction(int buttonPressed, boolean seekBarPressed, int progress) {
+        if (seekBarPressed) {
+            mMusicService.setSeekTo(progress * 1000); // seek to wants milliseconds
+//            seekBarSeek(progress);
+        } else {
+            switch (buttonPressed) {
+                case 0:
+                    playClicked();
+                    break;
+                case 1:
+                    pauseClicked();
+                    break;
+                case 2:
+                    previousClicked();
+                    break;
+                case 3:
+                    nextClicked();
+                    break;
+            }
+        }
+
+    }
+
+    /**
+     * Play Button Clicked
+     */
+    private void playClicked() {
+        if (mPauseSeekPosition != 0) {
+            mMusicService.setSeekTo(mPauseSeekPosition);
+            mPauseSeekPosition = 0;
+        } else {
+            mMusicService.setPosition(mPosition);
+            mMusicService.playSong();
+        }
+        executeTaskForSeekBar();
+    }
+
+    private void pauseClicked() {
+        if (mPauseSeekPosition != 0) {
+            mMusicService.setSeekTo(mPauseSeekPosition);
+        }
+        mPauseSeekPosition = mMusicService.pauseSong();
+    }
+
+//    @Subscribe
+//    public void pauseEventSubscriber(PauseButtonEvent event) {
+//        mPauseSeekPosition = event.getProgress();
+//    }
+
+    /**
+     * Next Button Clicked
+     */
+    private void nextClicked() {
+        mPauseSeekPosition = 0;
+        int newPosition = mPosition + 1;
+        if (mMusicBound && (newPosition >= 0 && newPosition < mTopTracks.size())) {
+
+            PlaybackFragment.bus.post(newPosition);
+
+            mMusicService.setPosition(newPosition);
+            mMusicService.playSong();
+            mPosition = newPosition;
+
+            PlaybackFragment.bus.post(new PlayButtonEvent(1));
+        }
+        executeTaskForSeekBar();
+    }
+
+    /**
+     * Previous Button Clicked
+     */
+    private void previousClicked() {
+        int newPosition = mPosition - 1;
+        if (mMusicBound && (newPosition >= 0 && newPosition < mTopTracks.size())) {
+
+            PlaybackFragment.bus.post(newPosition);
+
+            mMusicService.setPosition(newPosition);
+            mMusicService.playSong();
+            mPosition = newPosition;
+
+            PlaybackFragment.bus.post(new PlayButtonEvent(1));
+        }
+        executeTaskForSeekBar();
+    }
+
+
+    /**
+     * This task will track the progress of the song and update the seekbar
+     */
+    public void executeTaskForSeekBar() {
+        PlaybackFragment.bus.post(new SeekBarProgressEvent(mPauseSeekPosition));
+
+        if (!mSeekBarTaskIsRunning) {
+            mSeekBarTaskIsRunning = true;
+            // This schedule a runnable task every second
+            scheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
+                public void run() {
+                    if (mMusicService != null && mMusicService.isMusicPlaying()) {
+                        int progress = (mMusicService.getProgress() / 1000);
+                        Log.d("progress", String.valueOf(progress));
+                        PlaybackFragment.bus.post(new SeekBarProgressEvent(progress + 1));
+                    }
+
+                    if (mMusicBound) mHandler.postDelayed(this, 1000);
+                }
+            }, 0, 1, TimeUnit.SECONDS);
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (mPlayIntent == null) {
+            mPlayIntent = new Intent(this, MusicService.class);
+            if (musicConnection != null) {
+                bindService(mPlayIntent, musicConnection, Context.BIND_AUTO_CREATE);
+                startService(mPlayIntent);
+            }
+
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (mMusicBound) {
+            if (musicConnection != null) {
+
+                unbindService(musicConnection);
+                mMusicBound = false;
+            }
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        mSeekBarTaskIsRunning = false;
+        stopService(mPlayIntent);
+        mMusicService = null;
+        super.onDestroy();
     }
 
     /**
@@ -172,5 +368,6 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
             finish();
         }
     }
+
 
 }

@@ -1,14 +1,8 @@
 package com.nab_lab.spotifystreamer;
 
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
+import android.app.Activity;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.IBinder;
 import android.support.v4.app.DialogFragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,13 +12,13 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.nab_lab.spotifystreamer.custom.TopTrack;
-import com.nab_lab.spotifystreamer.service.MusicService;
+import com.nab_lab.spotifystreamer.events.PlayButtonEvent;
+import com.nab_lab.spotifystreamer.events.SeekBarProgressEvent;
+import com.squareup.otto.Bus;
+import com.squareup.otto.Subscribe;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -35,6 +29,7 @@ public class PlaybackFragment extends DialogFragment {
     private static final String ARG_TOP_TRACKS = "PARAM_TOP_TRACKS";
     private static final String ARG_TRACK_POSITION = "PARAM_TRACK_POSITION";
 
+    private OnFragmentInteractionListener mListener;
 
     private String mArtistName;
     private ArrayList<TopTrack> mTopTracks;
@@ -53,17 +48,33 @@ public class PlaybackFragment extends DialogFragment {
     ImageButton buttonPlaybackPlay;
     ImageButton buttonPlaybackNext;
 
-    private MusicService mMusicService;
-    private Intent mPlayIntent;
-    private boolean mMusicBound = false;
+    public static Bus bus;
 
-    final Handler mHandler = new Handler();
-
-    ScheduledExecutorService scheduleTaskExecutor;
-
-    private boolean mSeekBarTaskIsRunning = false;
+    boolean isPauseButtonShowing = false;
 
     public PlaybackFragment() {
+    }
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        try {
+            mListener = (OnFragmentInteractionListener) activity;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(activity.toString()
+                    + " must implement OnFragmentInteractionListener");
+        }
+    }
+
+
+    /**
+     * This interface must be implemented by activities that contain this
+     * fragment to allow an interaction in this fragment to be communicated
+     * to the activity and potentially other fragments contained in that
+     * activity.
+     */
+    public interface OnFragmentInteractionListener {
+        void onFragmentInteraction(int buttonPressed, boolean seekBarPressed, int progress);
     }
 
 
@@ -88,6 +99,8 @@ public class PlaybackFragment extends DialogFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        bus = new Bus();
+        bus.register(this);
         if (getArguments() != null) {
             mArtistName = getArguments().getString(ARG_ARTIST_NAME);
             mTopTracks = getArguments().getParcelableArrayList(ARG_TOP_TRACKS);
@@ -119,21 +132,29 @@ public class PlaybackFragment extends DialogFragment {
         buttonPlaybackPlay.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                playClicked();
+                if (isPauseButtonShowing) {
+                    mListener.onFragmentInteraction(1, false, 0); // then we call for pause
+                    buttonPlaybackPlay.setImageResource(R.drawable.button_play);
+                    isPauseButtonShowing = false;
+                } else {
+                    mListener.onFragmentInteraction(0, false, 0); // then we call for play
+                    buttonPlaybackPlay.setImageResource(R.drawable.button_pause);
+                    isPauseButtonShowing = true; // it is now
+                }
             }
         });
 
         buttonPlaybackNext.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                nextClicked();
+                mListener.onFragmentInteraction(3, false, 0);
             }
         });
 
         buttonPlaybackPrevious.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                previousClicked();
+                mListener.onFragmentInteraction(2, false, 0);
             }
         });
 
@@ -154,84 +175,40 @@ public class PlaybackFragment extends DialogFragment {
 
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
-
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-
+                mListener.onFragmentInteraction(0, true, seekBar.getProgress());
             }
         });
 
-        scheduleTaskExecutor = Executors.newScheduledThreadPool(5);
+
 
         return view;
     }
 
-    /**
-     * This task will track the progress of the song and update the seekbar
-     */
-    public void executeTaskForSeekBar() {
+    @Subscribe
+    public void setSeekBarProgress(SeekBarProgressEvent event) {
+        seekBarPlayback.setProgress(event.getProgress());
+    }
 
-        if (!mSeekBarTaskIsRunning) {
-            mSeekBarTaskIsRunning = true;
-            // This schedule a runnable task every second
-            scheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
-                public void run() {
-                    if (mMusicService != null && mMusicService.isMusicPlaying()) {
-                        int progress = (mMusicService.getProgress() / 1000);
-                        Log.d("progress", String.valueOf(progress));
-                        seekBarPlayback.setProgress(progress + 1);
-                    }
+    @Subscribe
+    public void setPlayButtonImage(PlayButtonEvent event) {
+        if (event.getProgress() == 1) {
+            isPauseButtonShowing = true;
+            buttonPlaybackPlay.setImageResource(R.drawable.button_pause);
 
-                    if (mMusicBound) mHandler.postDelayed(this, 1000);
-                }
-            }, 0, 1, TimeUnit.SECONDS);
+        } else {
+            isPauseButtonShowing = false;
+            buttonPlaybackPlay.setImageResource(R.drawable.button_play);
         }
+
     }
 
-    /**
-     * Play Button Clicked
-     */
-    private void playClicked() {
-        mMusicService.setPosition(mPosition);
-        mMusicService.playSong();
-        executeTaskForSeekBar();
-    }
 
-    /**
-     * Next Button Clicked
-     */
-    private void nextClicked() {
-        int newPosition = mPosition + 1;
-        if (mMusicBound && (newPosition >= 0 && newPosition < mTopTracks.size())) {
-
-            initArtLayout(newPosition);
-
-            mMusicService.setPosition(newPosition);
-            mMusicService.playSong();
-            mPosition = newPosition;
-        }
-        executeTaskForSeekBar();
-    }
-
-    /**
-     * Previous Button Clicked
-     */
-    private void previousClicked() {
-        int newPosition = mPosition - 1;
-        if (mMusicBound && (newPosition >= 0 && newPosition < mTopTracks.size())) {
-
-            initArtLayout(newPosition);
-
-            mMusicService.setPosition(newPosition);
-            mMusicService.playSong();
-            mPosition = newPosition;
-        }
-        executeTaskForSeekBar();
-    }
-
-    private void initArtLayout(int newPosition) {
+    @Subscribe
+    public void initArtLayout(Integer newPosition) {
         textViewAlbumTitle.setText(mTopTracks.get(newPosition).albumName);
         textViewSongName.setText(mTopTracks.get(newPosition).trackName);
         Picasso.with(getActivity())
@@ -240,31 +217,6 @@ public class PlaybackFragment extends DialogFragment {
     }
 
 
-    private ServiceConnection musicConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            MusicService.MusicBinder binder = (MusicService.MusicBinder) service;
-            mMusicService = binder.getService();
-            mMusicService.setTopTracks(mTopTracks);
-            mMusicBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            mMusicBound = false;
-        }
-    };
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        if (mPlayIntent == null) {
-            mPlayIntent = new Intent(getActivity(), MusicService.class);
-            getActivity().bindService(mPlayIntent, musicConnection, Context.BIND_AUTO_CREATE);
-            getActivity().startService(mPlayIntent);
-        }
-    }
-
     @Override
     public void onResume() {
         super.onResume();
@@ -272,21 +224,5 @@ public class PlaybackFragment extends DialogFragment {
 
     }
 
-    @Override
-    public void onStop() {
-        super.onStop();
-        if (mMusicBound) {
-            getActivity().unbindService(musicConnection);
-            mMusicBound = false;
-        }
-    }
-
-    @Override
-    public void onDestroy() {
-        mSeekBarTaskIsRunning = false;
-        getActivity().stopService(mPlayIntent);
-        mMusicService = null;
-        super.onDestroy();
-    }
 
 }
