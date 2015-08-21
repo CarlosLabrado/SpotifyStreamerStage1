@@ -8,6 +8,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
@@ -53,6 +54,8 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
 
     private int mPauseSeekPosition = 0;
 
+    private boolean isTablet = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,14 +64,18 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
         bus = new Bus();
         bus.register(this);
 
+        isTablet = getResources().getBoolean(R.bool.isTablet);
+
         toolbar = (Toolbar) findViewById(R.id.toolbar);
 
         /**toolBar **/
         setUpToolBar();
 
         if (savedInstanceState == null) {
-            // on first time display view for first nav item
-            fillContainerWithFragment(0, null, null, null, 0);
+            if (!isTablet) {
+                // on first time display view for first nav item
+                fillContainerWithFragment(0, null, null, null, 0);
+            }
         }
 
         scheduleTaskExecutor = Executors.newScheduledThreadPool(5);
@@ -186,7 +193,15 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
         bindService(mPlayIntent, musicConnection, Context.BIND_AUTO_CREATE);
         startService(mPlayIntent);
 
-        fillContainerWithFragment(2, null, artistName, topTracks, position);
+
+        if (isTablet) {
+            new PlaybackFragment();
+            FragmentManager fm = getSupportFragmentManager();
+            DialogFragment fragment = PlaybackFragment.newInstance(artistName, topTracks, position);
+            fragment.show(fm, "Dialog Fragment");
+        } else {
+            fillContainerWithFragment(2, null, artistName, topTracks, position);
+        }
     }
 
     // Playback
@@ -194,7 +209,6 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
     public void onFragmentInteraction(int buttonPressed, boolean seekBarPressed, int progress) {
         if (seekBarPressed) {
             mMusicService.setSeekTo(progress * 1000); // seek to wants milliseconds
-//            seekBarSeek(progress);
         } else {
             switch (buttonPressed) {
                 case 0:
@@ -234,11 +248,6 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
         }
         mPauseSeekPosition = mMusicService.pauseSong();
     }
-
-//    @Subscribe
-//    public void pauseEventSubscriber(PauseButtonEvent event) {
-//        mPauseSeekPosition = event.getProgress();
-//    }
 
     /**
      * Next Button Clicked
