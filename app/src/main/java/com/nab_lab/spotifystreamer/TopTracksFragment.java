@@ -11,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import com.nab_lab.spotifystreamer.custom.CustomAdapterTracks;
 import com.nab_lab.spotifystreamer.custom.RecyclerItemClickListener;
@@ -133,32 +134,39 @@ public class TopTracksFragment extends Fragment {
      * @param isSavedState indicates if there was a saved state ej. User rotated screen
      */
     private void drawRecyclerView(List<Track> items, boolean isSavedState) {
-        mContainerTracks.removeAllViews();
+        if (items != null && !items.isEmpty()) {
+            mContainerTracks.removeAllViews();
 
-        if (!isSavedState) {
-            mTopTracks = transformIntoParcelable(items);
+            if (!isSavedState) {
+                mTopTracks = transformIntoParcelable(items);
+            }
+
+            RecyclerView recyclerView = new RecyclerView(getActivity());
+            recyclerView.setHasFixedSize(true);
+            recyclerView.setVerticalScrollBarEnabled(true);
+
+            RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getActivity());
+            recyclerView.setLayoutManager(layoutManager);
+
+            RecyclerView.Adapter adapter = new CustomAdapterTracks(mTopTracks, getActivity());
+            recyclerView.setAdapter(adapter);
+
+            recyclerView.addOnItemTouchListener(new RecyclerItemClickListener(getActivity(), new RecyclerItemClickListener.OnItemClickListener() {
+                        @Override
+                        public void onItemClick(View view, int position) {
+                            Log.d(TAG, "clicked" + position);
+                            mListener.onFragmentInteraction(mTopTracks,
+                                    mArtistName, position);
+                        }
+                    })
+            );
+            mContainerTracks.addView(recyclerView);
+        } else {
+            getActivity().getSupportFragmentManager().popBackStack();
+            // no results found
+            Toast.makeText(getActivity(), R.string.toast_no_top_tracks, Toast.LENGTH_SHORT).show();
         }
 
-        RecyclerView recyclerView = new RecyclerView(getActivity());
-        recyclerView.setHasFixedSize(true);
-        recyclerView.setVerticalScrollBarEnabled(true);
-
-        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getActivity());
-        recyclerView.setLayoutManager(layoutManager);
-
-        RecyclerView.Adapter adapter = new CustomAdapterTracks(mTopTracks, getActivity());
-        recyclerView.setAdapter(adapter);
-
-        recyclerView.addOnItemTouchListener(new RecyclerItemClickListener(getActivity(), new RecyclerItemClickListener.OnItemClickListener() {
-                    @Override
-                    public void onItemClick(View view, int position) {
-                        Log.d(TAG, "clicked" + position);
-                        mListener.onFragmentInteraction(mTopTracks,
-                                mArtistName, position);
-                    }
-                })
-        );
-        mContainerTracks.addView(recyclerView);
     }
 
     private ArrayList<TopTrack> transformIntoParcelable(List<Track> items) {
