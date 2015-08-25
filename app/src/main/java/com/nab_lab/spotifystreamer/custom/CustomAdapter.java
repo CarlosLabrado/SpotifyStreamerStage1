@@ -81,10 +81,11 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
         holder.mTextView.setText(mDataset.get(position).name);
+        if (!mDataset.get(position).imageURL.equalsIgnoreCase("")) {
             Picasso.with(mContext).
                     load(mDataset.get(position).imageURL).
                     into(holder.mImageView);
-
+        }
     }
 
     // Return the size of your dataset (invoked by the layout manager)
