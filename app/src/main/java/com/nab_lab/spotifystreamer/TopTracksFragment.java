@@ -1,6 +1,9 @@
 package com.nab_lab.spotifystreamer;
 
 import android.app.Activity;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -94,10 +97,12 @@ public class TopTracksFragment extends Fragment {
 
         mContainerTracks = (LinearLayout) view.findViewById(R.id.containerTopTracks);
         if (savedInstanceState == null) {
-            new SearchTopTracksAsync().execute("");
+            if (isNetworkAvailable(getActivity())) {
+                new SearchTopTracksAsync().execute("");
+            }
         } else {
             mTopTracks = savedInstanceState.getParcelableArrayList(PARCELABLE_TOP_TRACKS_LIST);
-            drawRecyclerView(null, true);
+            drawRecyclerView(true);
         }
 
         return view;
@@ -130,16 +135,11 @@ public class TopTracksFragment extends Fragment {
     /**
      * Programmatically adds the recycler view
      *
-     * @param items        the Artist list
      * @param isSavedState indicates if there was a saved state ej. User rotated screen
      */
-    private void drawRecyclerView(List<Track> items, boolean isSavedState) {
-        if (items != null && !items.isEmpty()) {
+    private void drawRecyclerView(boolean isSavedState) {
+        if (mTopTracks != null && !mTopTracks.isEmpty()) {
             mContainerTracks.removeAllViews();
-
-            if (!isSavedState) {
-                mTopTracks = transformIntoParcelable(items);
-            }
 
             RecyclerView recyclerView = new RecyclerView(getActivity());
             recyclerView.setHasFixedSize(true);
@@ -169,19 +169,46 @@ public class TopTracksFragment extends Fragment {
 
     }
 
-    private ArrayList<TopTrack> transformIntoParcelable(List<Track> items) {
-        ArrayList<TopTrack> topTracks = new ArrayList<>();
-        for (Track track : items) {
-            TopTrack parcelableTrack = new TopTrack(track);
-            topTracks.add(parcelableTrack);
+    private void transformIntoParcelable(List<Track> items) {
+        if (items != null && !items.isEmpty()) {
+            mTopTracks = new ArrayList<>();
+            for (Track track : items) {
+                TopTrack parcelableTrack = new TopTrack(track);
+                mTopTracks.add(parcelableTrack);
+            }
         }
-        return topTracks;
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
         mListener = null;
+    }
+
+    /**
+     * Checks for an existing network connectivity
+     *
+     * @param context The {@link Context} which is needed to tap
+     *                {@link Context#CONNECTIVITY_SERVICE}
+     * @return True if network connection is available
+     */
+    public static boolean isNetworkAvailable(Context context) {
+        ConnectivityManager connectivity = (ConnectivityManager) context
+                .getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        if (connectivity == null) {
+            return false;
+        } else {
+            NetworkInfo[] info = connectivity.getAllNetworkInfo();
+            if (info != null) {
+                for (int i = 0; i < info.length; i++) {
+                    if (info[i].getState() == NetworkInfo.State.CONNECTED) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -222,7 +249,8 @@ public class TopTracksFragment extends Fragment {
         @Override
         protected void onPostExecute(Tracks tracks) {
             super.onPostExecute(tracks);
-            drawRecyclerView(tracks.tracks, false);
+            transformIntoParcelable(tracks.tracks);
+            drawRecyclerView(false);
         }
     }
 

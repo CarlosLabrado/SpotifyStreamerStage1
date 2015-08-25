@@ -18,8 +18,10 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.nab_lab.spotifystreamer.custom.CustomAdapter;
+import com.nab_lab.spotifystreamer.custom.CustomArtist;
 import com.nab_lab.spotifystreamer.custom.RecyclerItemClickListener;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import kaaes.spotify.webapi.android.SpotifyApi;
@@ -38,6 +40,10 @@ public class ArtistListFragment extends Fragment {
 
     private final String TAG = ArtistListFragment.class.getSimpleName();
 
+    private final String SAVED_ARTIST_LIST = "SAVED_ARTIST_LIST";
+    private final String SAVED_ORIGINAL_SEARCH = "SAVED_ORIGINAL_SEARCH";
+
+    private ArrayList<CustomArtist> mCustomArtists;
 
     private OnFragmentInteractionListener mListener;
 
@@ -50,7 +56,7 @@ public class ArtistListFragment extends Fragment {
 
     private Handler mHandler;
 
-    private List<Artist> mArtistList;
+    private String originalSearch;
 
 
     public ArtistListFragment() {
@@ -66,9 +72,14 @@ public class ArtistListFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+                             final Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_artist_list, container, false);
+
+        if (savedInstanceState != null) {
+            mCustomArtists = savedInstanceState.getParcelableArrayList(SAVED_ARTIST_LIST);
+            originalSearch = savedInstanceState.getString(SAVED_ORIGINAL_SEARCH);
+        }
         editTextArtistSearch = (EditText) view.findViewById(R.id.editTextSearch);
 
         editTextArtistSearch.addTextChangedListener(new TextWatcher() {
@@ -90,7 +101,12 @@ public class ArtistListFragment extends Fragment {
                         public void run() {
                             if (!searchIsRunning) {
                                 searchIsRunning = true;
-                                searchTriggered();
+                                if (savedInstanceState == null || textChanged()) {
+                                    searchTriggered();
+                                } else {
+                                    searchIsRunning = false;
+                                    drawRecyclerView();
+                                }
                             }
                         }
                     }, SEARCH_TRIGGER_DELAY_IN_MS);
@@ -103,19 +119,33 @@ public class ArtistListFragment extends Fragment {
         return view;
     }
 
+    private boolean textChanged() {
+        if (editTextArtistSearch.getText().toString().equalsIgnoreCase(originalSearch)) {
+            return false;
+        } else {
+            originalSearch = editTextArtistSearch.getText().toString();
+            return true;
+        }
+    }
+
     public void searchTriggered() {
         new SearchAsync().execute(editTextArtistSearch.getText().toString());
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putParcelableArrayList(SAVED_ARTIST_LIST, mCustomArtists);
+        if (editTextArtistSearch != null) {
+            outState.putString(SAVED_ORIGINAL_SEARCH, originalSearch = editTextArtistSearch.getText().toString());
+        }
+    }
+
     /**
      * Programmatically adds the recycler view
-     *
-     * @param items the Artist list
      */
-    private void drawRecyclerView(List<Artist> items) {
+    private void drawRecyclerView() {
         containerArtists.removeAllViews();
-
-        mArtistList = items;
 
         RecyclerView recyclerView = new RecyclerView(getActivity());
         recyclerView.setHasFixedSize(true);
@@ -124,14 +154,14 @@ public class ArtistListFragment extends Fragment {
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getActivity());
         recyclerView.setLayoutManager(layoutManager);
 
-        RecyclerView.Adapter adapter = new CustomAdapter(items, getActivity());
+        RecyclerView.Adapter adapter = new CustomAdapter(mCustomArtists, getActivity());
         recyclerView.setAdapter(adapter);
 
         recyclerView.addOnItemTouchListener(new RecyclerItemClickListener(getActivity(), new RecyclerItemClickListener.OnItemClickListener() {
                     @Override
                     public void onItemClick(View view, int position) {
                         Log.d(TAG, "clicked" + position);
-                        mListener.onFragmentInteraction(mArtistList.get(position).id, mArtistList.get(position).name);
+                        mListener.onFragmentInteraction(mCustomArtists.get(position).id, mCustomArtists.get(position).name);
                     }
                 })
         );
@@ -160,6 +190,18 @@ public class ArtistListFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
+    }
+
+
+    public void translateArtistListToCustom(List<Artist> items) {
+        if (items != null && !items.isEmpty()) {
+
+            mCustomArtists = new ArrayList<>();
+            for (Artist artist : items) {
+                CustomArtist customArtist = new CustomArtist(artist);
+                mCustomArtists.add(customArtist);
+            }
+        }
     }
 
     /**
@@ -204,7 +246,8 @@ public class ArtistListFragment extends Fragment {
             super.onPostExecute(artistsPager);
             searchIsRunning = false;
             if (artistsPager != null && !artistsPager.artists.items.isEmpty()) {
-                drawRecyclerView(artistsPager.artists.items);
+                translateArtistListToCustom(artistsPager.artists.items);
+                drawRecyclerView();
             } else {
                 Toast.makeText(getActivity(), "Sorry, we couldn't find anything related to that artist", Toast.LENGTH_SHORT).show();
             }

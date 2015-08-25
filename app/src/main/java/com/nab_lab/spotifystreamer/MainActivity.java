@@ -4,6 +4,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -16,11 +17,13 @@ import android.support.v7.widget.Toolbar;
 import android.transition.TransitionInflater;
 import android.util.Log;
 
+import com.nab_lab.spotifystreamer.custom.MyPlayerSingleton;
 import com.nab_lab.spotifystreamer.custom.TopTrack;
 import com.nab_lab.spotifystreamer.events.PlayButtonEvent;
 import com.nab_lab.spotifystreamer.events.SeekBarProgressEvent;
 import com.nab_lab.spotifystreamer.service.MusicService;
 import com.squareup.otto.Bus;
+import com.squareup.otto.Subscribe;
 
 import java.util.ArrayList;
 import java.util.concurrent.Executors;
@@ -31,6 +34,8 @@ import java.util.concurrent.TimeUnit;
 public class MainActivity extends AppCompatActivity implements ArtistListFragment.OnFragmentInteractionListener,
         TopTracksFragment.OnFragmentInteractionListener, PlaybackFragment.OnFragmentInteractionListener {
 
+    private static final String SAVED_TOP_TRACKS = "SAVED_TOP_TRACKS";
+    private static final String SAVED_POSITION = "SAVED_POSITION";
     private final String TAG = MainActivity.class.getSimpleName();
 
     Toolbar toolbar;
@@ -76,6 +81,8 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
                 // on first time display view for first nav item
                 fillContainerWithFragment(0, null, null, null, 0);
             }
+        } else {
+            mTopTracks = savedInstanceState.getParcelableArrayList(SAVED_TOP_TRACKS);
         }
 
         scheduleTaskExecutor = Executors.newScheduledThreadPool(5);
@@ -118,6 +125,14 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
 
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if (mTopTracks != null && !mTopTracks.isEmpty()) {
+            outState.putParcelableArrayList(SAVED_TOP_TRACKS, mTopTracks);
+            outState.putInt(SAVED_POSITION, mPosition);
+        }
+    }
 
     /**
      * sets up the top bar
@@ -176,23 +191,7 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
         mTopTracks = topTracks;
         mPosition = position;
 
-        musicConnection = new ServiceConnection() {
-            @Override
-            public void onServiceConnected(ComponentName name, IBinder service) {
-                MusicService.MusicBinder binder = (MusicService.MusicBinder) service;
-                mMusicService = binder.getService();
-                mMusicService.setTopTracks(mTopTracks);
-                mMusicBound = true;
-            }
-
-            @Override
-            public void onServiceDisconnected(ComponentName name) {
-                mMusicBound = false;
-            }
-        };
-        bindService(mPlayIntent, musicConnection, Context.BIND_AUTO_CREATE);
-        startService(mPlayIntent);
-
+        attemptMusicServiceConnection();
 
         if (isTablet) {
             new PlaybackFragment();
@@ -204,25 +203,53 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
         }
     }
 
+    private void attemptMusicServiceConnection() {
+        try {
+            musicConnection = new ServiceConnection() {
+                @Override
+                public void onServiceConnected(ComponentName name, IBinder service) {
+                    MusicService.MusicBinder binder = (MusicService.MusicBinder) service;
+                    mMusicService = binder.getService();
+                    mMusicService.setTopTracks(mTopTracks);
+                    mMusicBound = true;
+                }
+
+                @Override
+                public void onServiceDisconnected(ComponentName name) {
+                    mMusicBound = false;
+                }
+            };
+            bindService(mPlayIntent, musicConnection, Context.BIND_AUTO_CREATE);
+            startService(mPlayIntent);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     // Playback
     @Override
     public void onFragmentInteraction(int buttonPressed, boolean seekBarPressed, int progress) {
-        if (seekBarPressed) {
-            mMusicService.setSeekTo(progress * 1000); // seek to wants milliseconds
+        if (mMusicService == null) {
+            attemptMusicServiceConnection();
         } else {
-            switch (buttonPressed) {
-                case 0:
-                    playClicked();
-                    break;
-                case 1:
-                    pauseClicked();
-                    break;
-                case 2:
-                    previousClicked();
-                    break;
-                case 3:
-                    nextClicked();
-                    break;
+
+            if (seekBarPressed) {
+                mMusicService.setSeekTo(progress * 1000); // seek to wants milliseconds
+            } else {
+                switch (buttonPressed) {
+                    case 0:
+                        playClicked();
+                        break;
+                    case 1:
+                        pauseClicked();
+                        break;
+                    case 2:
+                        previousClicked();
+                        break;
+                    case 3:
+                        nextClicked();
+                        break;
+                }
             }
         }
 
@@ -298,16 +325,24 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
             // This schedule a runnable task every second
             scheduleTaskExecutor.scheduleAtFixedRate(new Runnable() {
                 public void run() {
-                    if (mMusicService != null && mMusicService.isMusicPlaying()) {
-                        int progress = (mMusicService.getProgress() / 1000);
-                        Log.d("progress", String.valueOf(progress));
+                    MyPlayerSingleton myPlayerSingleton = MyPlayerSingleton.getInstance();
+                    MediaPlayer mediaPlayer = myPlayerSingleton.getMediaPlayer();
+                    int currentPosition = mediaPlayer.getCurrentPosition();
+                    if (mediaPlayer.isPlaying()) {
+                        int progress = (currentPosition / 1000);
+                        Log.d("progress", String.valueOf(currentPosition));
                         PlaybackFragment.bus.post(new SeekBarProgressEvent(progress + 1));
                     }
 
-                    if (mMusicBound) mHandler.postDelayed(this, 1000);
+                    mHandler.postDelayed(this, 1000);
                 }
             }, 0, 1, TimeUnit.SECONDS);
         }
+    }
+
+    @Subscribe
+    public void setCurrentTrackPosition(Integer position) {
+        mPosition = position;
     }
 
     @Override

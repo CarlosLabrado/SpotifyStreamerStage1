@@ -2,6 +2,7 @@ package com.nab_lab.spotifystreamer;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.DialogFragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -28,6 +29,8 @@ public class PlaybackFragment extends DialogFragment {
     private static final String ARG_ARTIST_NAME = "PARAM_ARTIST_NAME";
     private static final String ARG_TOP_TRACKS = "PARAM_TOP_TRACKS";
     private static final String ARG_TRACK_POSITION = "PARAM_TRACK_POSITION";
+    private static final String PARCELABLE_TOP_TRACKS_LIST = "PARCELABLE_TOP_TRACKS_LIST";
+    private static final String SAVED_POSITION = "SAVED_POSITION";
 
     private OnFragmentInteractionListener mListener;
 
@@ -51,6 +54,8 @@ public class PlaybackFragment extends DialogFragment {
     public static Bus bus;
 
     boolean isPauseButtonShowing = false;
+
+    private Handler mHandler;
 
     public PlaybackFragment() {
     }
@@ -127,6 +132,12 @@ public class PlaybackFragment extends DialogFragment {
         buttonPlaybackNext = (ImageButton) view.findViewById(R.id.buttonPlaybackNext);
 
         textViewArtistName.setText(mArtistName);
+
+        if (savedInstanceState != null) {
+            mTopTracks = savedInstanceState.getParcelableArrayList(PARCELABLE_TOP_TRACKS_LIST);
+            mPosition = savedInstanceState.getInt(SAVED_POSITION);
+            MainActivity.bus.post(mPosition);
+        }
         initArtLayout(mPosition);
 
         buttonPlaybackPlay.setOnClickListener(new View.OnClickListener() {
@@ -183,10 +194,30 @@ public class PlaybackFragment extends DialogFragment {
             }
         });
 
+        mHandler = new Handler();
+
+        // we start the song automatically
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mListener.onFragmentInteraction(0, false, 0);
+                buttonPlaybackPlay.setImageResource(R.drawable.button_pause);
+                isPauseButtonShowing = true; // it is now
+            }
+        }, 500);
 
 
         return view;
     }
+
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putParcelableArrayList(PARCELABLE_TOP_TRACKS_LIST, mTopTracks);
+        outState.putInt(SAVED_POSITION, mPosition);
+    }
+
 
     @Subscribe
     public void setSeekBarProgress(SeekBarProgressEvent event) {
@@ -209,6 +240,7 @@ public class PlaybackFragment extends DialogFragment {
 
     @Subscribe
     public void initArtLayout(Integer newPosition) {
+        mPosition = newPosition;
         textViewAlbumTitle.setText(mTopTracks.get(newPosition).albumName);
         textViewSongName.setText(mTopTracks.get(newPosition).trackName);
         Picasso.with(getActivity())

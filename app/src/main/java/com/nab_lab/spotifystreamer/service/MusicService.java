@@ -6,9 +6,9 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.IBinder;
-import android.util.Log;
 
 import com.nab_lab.spotifystreamer.PlaybackFragment;
+import com.nab_lab.spotifystreamer.custom.MyPlayerSingleton;
 import com.nab_lab.spotifystreamer.custom.TopTrack;
 import com.nab_lab.spotifystreamer.events.PlayButtonEvent;
 
@@ -48,7 +48,8 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     public void onCreate() {
         super.onCreate();
 
-        mMediaPlayer = new MediaPlayer();
+        MyPlayerSingleton myPlayerSingleton = MyPlayerSingleton.getInstance();
+        mMediaPlayer = myPlayerSingleton.getMediaPlayer();
         initMusicPlayer();
     }
 
@@ -102,7 +103,6 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-        Log.d("Media player", "Completed song");
         PlaybackFragment.bus.post(new PlayButtonEvent(0));
     }
 

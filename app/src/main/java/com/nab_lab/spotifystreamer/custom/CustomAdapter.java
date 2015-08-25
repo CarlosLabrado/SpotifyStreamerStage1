@@ -30,16 +30,13 @@ import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
-import kaaes.spotify.webapi.android.models.Artist;
-import kaaes.spotify.webapi.android.models.Image;
-
 /**
  * Provide views to RecyclerView with data from mDataSet.
  */
 public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder> {
     private static final String TAG = CustomAdapter.class.getSimpleName();
 
-    private List<Artist> mDataset;
+    private List<CustomArtist> mDataset;
     private Context mContext;
 
     // Provide a reference to the views for each data item
@@ -61,7 +58,7 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder
     }
 
     // Provide a suitable constructor (depends on the kind of dataset)
-    public CustomAdapter(List<Artist> myDataset, Context context) {
+    public CustomAdapter(List<CustomArtist> myDataset, Context context) {
         mDataset = myDataset;
         mContext = context;
     }
@@ -84,12 +81,9 @@ public class CustomAdapter extends RecyclerView.Adapter<CustomAdapter.ViewHolder
         // - get element from your dataset at this position
         // - replace the contents of the view with that element
         holder.mTextView.setText(mDataset.get(position).name);
-        List<Image> imageList = mDataset.get(position).images;
-        if (imageList != null && !imageList.isEmpty()) {
             Picasso.with(mContext).
-                    load(imageList.get(0).url).
+                    load(mDataset.get(position).imageURL).
                     into(holder.mImageView);
-        }
 
     }
 
