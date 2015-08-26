@@ -58,6 +58,7 @@ public class ArtistListFragment extends Fragment {
 
     private String originalSearch;
 
+    volatile boolean running;
 
     public ArtistListFragment() {
         // Required empty public constructor
@@ -68,6 +69,12 @@ public class ArtistListFragment extends Fragment {
         super.onCreate(savedInstanceState);
         mHandler = new Handler();
 
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        running = true;
     }
 
     @Override
@@ -192,6 +199,11 @@ public class ArtistListFragment extends Fragment {
         mListener = null;
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        running = false;
+    }
 
     public void translateArtistListToCustom(List<Artist> items) {
         if (items != null && !items.isEmpty()) {
@@ -244,12 +256,14 @@ public class ArtistListFragment extends Fragment {
         @Override
         protected void onPostExecute(ArtistsPager artistsPager) {
             super.onPostExecute(artistsPager);
-            searchIsRunning = false;
-            if (artistsPager != null && !artistsPager.artists.items.isEmpty()) {
-                translateArtistListToCustom(artistsPager.artists.items);
-                drawRecyclerView();
-            } else {
-                Toast.makeText(getActivity(), "Sorry, we couldn't find anything related to that artist", Toast.LENGTH_SHORT).show();
+            if (running) {
+                searchIsRunning = false;
+                if (artistsPager != null && !artistsPager.artists.items.isEmpty()) {
+                    translateArtistListToCustom(artistsPager.artists.items);
+                    drawRecyclerView();
+                } else {
+                    Toast.makeText(getActivity(), "Sorry, we couldn't find anything related to that artist", Toast.LENGTH_SHORT).show();
+                }
             }
         }
     }

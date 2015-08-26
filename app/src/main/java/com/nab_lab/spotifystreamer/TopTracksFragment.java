@@ -58,6 +58,8 @@ public class TopTracksFragment extends Fragment {
 
     private ArrayList<TopTrack> mTopTracks;
 
+    volatile boolean running;
+
     /**
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
@@ -90,6 +92,12 @@ public class TopTracksFragment extends Fragment {
     }
 
     @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        running = true;
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
@@ -98,7 +106,7 @@ public class TopTracksFragment extends Fragment {
         mContainerTracks = (LinearLayout) view.findViewById(R.id.containerTopTracks);
         if (savedInstanceState == null) {
             if (isNetworkAvailable(getActivity())) {
-                new SearchTopTracksAsync().execute("");
+                new SearchTopTracksAsync().execute();
             }
         } else {
             mTopTracks = savedInstanceState.getParcelableArrayList(PARCELABLE_TOP_TRACKS_LIST);
@@ -185,6 +193,12 @@ public class TopTracksFragment extends Fragment {
         mListener = null;
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        running = false;
+    }
+
     /**
      * Checks for an existing network connectivity
      *
@@ -226,9 +240,9 @@ public class TopTracksFragment extends Fragment {
         void onFragmentInteraction(ArrayList<TopTrack> mTopTracks, String mArtistName, int position);
     }
 
-    private class SearchTopTracksAsync extends AsyncTask<String, Void, Tracks> {
+    private class SearchTopTracksAsync extends AsyncTask<Void, Void, Tracks> {
         @Override
-        protected Tracks doInBackground(String... strings) {
+        protected Tracks doInBackground(Void... voids) {
             SpotifyApi api = new SpotifyApi();
 
             SpotifyService spotify = api.getService();
@@ -248,9 +262,11 @@ public class TopTracksFragment extends Fragment {
 
         @Override
         protected void onPostExecute(Tracks tracks) {
-            super.onPostExecute(tracks);
-            transformIntoParcelable(tracks.tracks);
-            drawRecyclerView(false);
+            if (running) {
+                super.onPostExecute(tracks);
+                transformIntoParcelable(tracks.tracks);
+                drawRecyclerView(false);
+            }
         }
     }
 
