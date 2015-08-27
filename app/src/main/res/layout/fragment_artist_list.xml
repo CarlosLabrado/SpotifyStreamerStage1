@@ -30,6 +30,13 @@
                 android:singleLine="true" />
         </LinearLayout>
 
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="150dp"
+            android:indeterminate="true"
+            android:id="@+id/progressBarArtistSearch"
+            android:layout_gravity="center_horizontal" />
+
         <LinearLayout
             android:id="@+id/containerArtists"
             android:layout_width="wrap_content"

@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.nab_lab.spotifystreamer.custom.CustomAdapter;
@@ -60,6 +61,8 @@ public class ArtistListFragment extends Fragment {
 
     volatile boolean running;
 
+    ProgressBar mProgressBar;
+
     public ArtistListFragment() {
         // Required empty public constructor
     }
@@ -88,6 +91,9 @@ public class ArtistListFragment extends Fragment {
             originalSearch = savedInstanceState.getString(SAVED_ORIGINAL_SEARCH);
         }
         editTextArtistSearch = (EditText) view.findViewById(R.id.editTextSearch);
+
+        mProgressBar = (ProgressBar) view.findViewById(R.id.progressBarArtistSearch);
+        mProgressBar.setVisibility(View.GONE);
 
         editTextArtistSearch.addTextChangedListener(new TextWatcher() {
             @Override
@@ -236,6 +242,14 @@ public class ArtistListFragment extends Fragment {
     private class SearchAsync extends AsyncTask<String, Void, ArtistsPager> {
 
         @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            if (running && mProgressBar != null) {
+                mProgressBar.setVisibility(View.VISIBLE);
+            }
+        }
+
+        @Override
         protected ArtistsPager doInBackground(String... strings) {
             SpotifyApi api = new SpotifyApi();
 
@@ -257,6 +271,9 @@ public class ArtistListFragment extends Fragment {
         protected void onPostExecute(ArtistsPager artistsPager) {
             super.onPostExecute(artistsPager);
             if (running) {
+                if (mProgressBar != null) {
+                    mProgressBar.setVisibility(View.GONE);
+                }
                 searchIsRunning = false;
                 if (artistsPager != null && !artistsPager.artists.items.isEmpty()) {
                     translateArtistListToCustom(artistsPager.artists.items);

@@ -77,8 +77,19 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
         setUpToolBar();
 
         if (savedInstanceState == null) {
+            /**
+             * This dummy fragment is to prevent the transition error when popping the fragment backStack
+             * Error: Attempt to invoke virtual method 'boolean android.support.v4.app.Fragment.getAllowReturnTransitionOverlap()' on a null object reference
+             * https://code.google.com/p/android/issues/detail?id=82832
+             */
+            FragmentManager fragmentManager = getSupportFragmentManager();
+
+            fragmentManager.beginTransaction()
+                    .add(R.id.container, new Fragment())
+                    .addToBackStack("dummy")
+                    .commit();
+
             if (!isTablet) {
-                // on first time display view for first nav item
                 fillContainerWithFragment(0, null, null, null, 0);
             }
         } else {
@@ -93,17 +104,21 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
 
     private void fillContainerWithFragment(int fragmentNumber, String artistId, String artistName, ArrayList<TopTrack> topTracks, int trackPosition) {
         Fragment fragment = null;
+        String fragmentName = "";
         switch (fragmentNumber) {
             case 0:
                 fragment = new ArtistListFragment();
+                fragmentName = "Artist";
                 break;
             case 1:
                 new TopTracksFragment();
                 fragment = TopTracksFragment.newInstance(artistId, artistName);
+                fragmentName = "TopTracks";
                 break;
             case 2:
                 new PlaybackFragment();
                 fragment = PlaybackFragment.newInstance(artistName, topTracks, trackPosition);
+                fragmentName = "Playback";
             default:
                 break;
         }
@@ -114,8 +129,8 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
             }
             FragmentManager fragmentManager = getSupportFragmentManager();
             fragmentManager.beginTransaction()
-                    .addToBackStack(null)
                     .replace(R.id.container, fragment)
+                    .addToBackStack(fragmentName)
                     .commit();
             Log.d(TAG, "fragment added " + fragment.getTag());
         } else {
@@ -406,7 +421,7 @@ public class MainActivity extends AppCompatActivity implements ArtistListFragmen
     @Override
     public void onBackPressed() {
         int fragments = getSupportFragmentManager().getBackStackEntryCount();
-        if (fragments > 1) {
+        if (fragments > 2) { // we now have a dummy all the time, plus the initial fragment
             super.onBackPressed();
         } else {
             finish();

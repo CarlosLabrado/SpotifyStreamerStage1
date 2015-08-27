@@ -4,6 +4,13 @@
     android:layout_height="match_parent"
     tools:context="com.nab_lab.spotifystreamer.TopTracksFragment">
 
+    <ProgressBar
+        android:layout_width="wrap_content"
+        android:layout_height="150dp"
+        android:indeterminate="true"
+        android:id="@+id/progressBarTopTracksSearch"
+        android:layout_gravity="center_horizontal" />
+
     <LinearLayout
         android:id="@+id/containerTopTracks"
         android:layout_width="wrap_content"

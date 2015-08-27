@@ -14,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.nab_lab.spotifystreamer.custom.CustomAdapterTracks;
@@ -60,6 +61,9 @@ public class TopTracksFragment extends Fragment {
 
     volatile boolean running;
 
+    ProgressBar mProgressBar;
+
+
     /**
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
@@ -102,6 +106,9 @@ public class TopTracksFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_top_tracks, container, false);
+
+        mProgressBar = (ProgressBar) view.findViewById(R.id.progressBarTopTracksSearch);
+        mProgressBar.setVisibility(View.GONE);
 
         mContainerTracks = (LinearLayout) view.findViewById(R.id.containerTopTracks);
         if (savedInstanceState == null) {
@@ -241,6 +248,15 @@ public class TopTracksFragment extends Fragment {
     }
 
     private class SearchTopTracksAsync extends AsyncTask<Void, Void, Tracks> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            if (running && mProgressBar != null) {
+                mProgressBar.setVisibility(View.VISIBLE);
+            }
+        }
+
         @Override
         protected Tracks doInBackground(Void... voids) {
             SpotifyApi api = new SpotifyApi();
@@ -263,6 +279,9 @@ public class TopTracksFragment extends Fragment {
         @Override
         protected void onPostExecute(Tracks tracks) {
             if (running) {
+                if (mProgressBar != null) {
+                    mProgressBar.setVisibility(View.GONE);
+                }
                 super.onPostExecute(tracks);
                 transformIntoParcelable(tracks.tracks);
                 drawRecyclerView(false);
